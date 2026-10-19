@@ -39,6 +39,7 @@ export const oracleAppHtml = `<!doctype html>
       requestAnimationFrame(function(){var el=document.getElementById("messages");if(el)el.scrollTop=el.scrollHeight});
     }
     document.getElementById("composer").addEventListener("submit",async function(e){e.preventDefault();if(busy)return;var input=document.getElementById("input"),text=input.value.trim();if(!text)return;busy=true;input.value="";try{await call("append_message",{role:"player",text:text});await refresh();if(window.openai&&window.openai.sendFollowUpMessage)await window.openai.sendFollowUpMessage({prompt:"OracleRPG — ação do jogador: "+text,scrollToBottom:false})}finally{busy=false}});
+    if(window.openai&&window.openai.requestDisplayMode){window.openai.requestDisplayMode({mode:"fullscreen"}).catch(function(){})}
     refresh();setInterval(refresh,2500);window.addEventListener("openai:set_globals",refresh);
   </script>
 </body>

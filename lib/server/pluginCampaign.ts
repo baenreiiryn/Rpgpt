@@ -2,6 +2,7 @@ import type { GameState, Memory } from "@/lib/game";
 import { executeCommand } from "@/lib/game";
 import { db } from "@/lib/server/db";
 import { sha256 } from "@/lib/server/crypto";
+import { getMcpAccessGrant } from "@/lib/server/mcpOauth";
 
 export type CampaignCredential = {
   campaignId: string;
@@ -18,6 +19,25 @@ export function parseCampaignCredential(token: string): CampaignCredential | nul
 }
 
 export async function loadCampaignByToken(token: string) {
+  const grant = await getMcpAccessGrant(token);
+  if (grant) {
+    const sql = db();
+    const rows = await sql`
+      SELECT id, state, version, updated_at
+      FROM campaigns
+      WHERE id = ${grant.campaignId}::uuid
+      LIMIT 1
+    `;
+    if (!rows[0]) return null;
+    return {
+      id: String(rows[0].id),
+      state: rows[0].state as GameState,
+      version: Number(rows[0].version),
+      updatedAt: rows[0].updated_at,
+      grant,
+    };
+  }
+
   const credential = parseCampaignCredential(token);
   if (!credential) return null;
   const sql = db();
@@ -45,6 +65,41 @@ export async function mutateCampaignByToken(
   token: string,
   mutate: (state: GameState) => GameState,
 ) {
+  const grant = await getMcpAccessGrant(token);
+  if (grant) {
+    const sql = db();
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const rows = await sql`
+        SELECT state, version
+        FROM campaigns
+        WHERE id = ${grant.campaignId}::uuid
+        LIMIT 1
+      `;
+      if (!rows[0]) throw new Error("Campaign not found.");
+      const current = rows[0].state as GameState;
+      const version = Number(rows[0].version);
+      const next = mutate(structuredClone(current) as GameState);
+      const updated = await sql`
+        UPDATE campaigns
+        SET state = ${JSON.stringify(next)}::jsonb,
+            version = version + 1,
+            updated_at = now()
+        WHERE id = ${grant.campaignId}::uuid
+          AND version = ${version}
+        RETURNING version, updated_at
+      `;
+      if (updated[0]) {
+        return {
+          id: grant.campaignId,
+          state: next,
+          version: Number(updated[0].version),
+          updatedAt: updated[0].updated_at,
+        };
+      }
+    }
+    throw new Error("Campaign changed concurrently. Retry the action.");
+  }
+
   const credential = parseCampaignCredential(token);
   if (!credential) throw new Error("Invalid campaign credential.");
 

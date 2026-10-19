@@ -8,6 +8,11 @@ import {
   loadCampaignByToken,
   mutateCampaignByToken,
 } from "@/lib/server/pluginCampaign";
+import {
+  getMcpAccessGrant,
+  MCP_RESOURCE,
+  ORACLE_ORIGIN,
+} from "@/lib/server/mcpOauth";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -327,15 +332,21 @@ const handler = createMcpHandler(
 
 async function verifyCampaignToken(_request: Request, bearerToken?: string): Promise<AuthInfo | undefined> {
   if (!bearerToken) return undefined;
-  const campaign = await loadCampaignByToken(bearerToken);
-  if (!campaign) return undefined;
+  const grant = await getMcpAccessGrant(bearerToken);
+  if (!grant || grant.resource !== MCP_RESOURCE) return undefined;
   return {
     token: bearerToken,
-    clientId: "oraclerpg-campaign-" + campaign.id,
-    scopes: ["campaign:read", "campaign:write"],
+    clientId: grant.clientId,
+    scopes: grant.scopes,
+    expiresAt: Math.floor(grant.expiresAt / 1000),
   };
 }
 
-const authenticated = withMcpAuth(handler, verifyCampaignToken, { required: true });
+const authenticated = withMcpAuth(handler, verifyCampaignToken, {
+  required: true,
+  requiredScopes: ["campaign:read"],
+  resourceMetadataPath: "/.well-known/oauth-protected-resource",
+  resourceUrl: ORACLE_ORIGIN,
+});
 
 export { authenticated as GET, authenticated as POST, authenticated as DELETE };
