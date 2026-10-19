@@ -1,0 +1,30 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "oraclerpg",
+  "version": "0.2.0",
+  "description": "Play persistent tabletop RPG campaigns with ChatGPT as the game master and OracleRPG as the interface and source of truth.",
+  "homepage": "https://oraclerpg.vercel.app",
+  "repository": "https://github.com/baenreiiryn/Rpgpt",
+  "keywords": ["rpg", "game-master", "campaign", "daggerheart", "tabletop"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "OracleRPG",
+        "shortDescription": "ChatGPT as GM, OracleRPG as the campaign interface.",
+        "longDescription": "Run persistent tabletop RPG campaigns with ChatGPT as the game master while OracleRPG manages character state, inventory, quests, NPCs, memories, scenes, and the fullscreen game interface.",
+        "developerName": "OracleRPG",
+        "category": "Games",
+        "capabilities": ["Read", "Write"],
+        "websiteURL": "https://oraclerpg.vercel.app",
+        "defaultPrompt": [
+          "Open OracleRPG and continue my campaign.",
+          "Use OracleRPG as the source of truth and act as my game master.",
+          "Open my current OracleRPG scene."
+        ],
+        "brandColor": "#8A5ECC"
+      },
+      "onboardingSkill": "./skills/oracle-gm/SKILL.md"
+    }
+  }
+}
+

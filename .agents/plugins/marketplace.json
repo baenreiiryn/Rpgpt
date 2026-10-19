@@ -1,0 +1,20 @@
+{
+  "name": "oraclerpg-local",
+  "plugins": [
+    {
+      "name": "oraclerpg",
+      "source": {
+        "source": "local",
+        "path": "./oraclerpg"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Games",
+      "interface": {
+        "displayName": "OracleRPG"
+      }
+    }
+  ]
+}
