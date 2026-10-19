@@ -1,7 +1,7 @@
 import type { GameState, Memory } from "@/lib/game";
-import { executeCommand } from "@/lib/game";
+import { executeCommand, initialState } from "@/lib/game";
 import { db } from "@/lib/server/db";
-import { sha256 } from "@/lib/server/crypto";
+import { randomToken, sha256 } from "@/lib/server/crypto";
 import { getMcpAccessGrant } from "@/lib/server/mcpOauth";
 
 export type CampaignCredential = {
@@ -16,6 +16,24 @@ export function parseCampaignCredential(token: string): CampaignCredential | nul
   const syncKey = token.slice(dot + 1).trim();
   if (!campaignId || !syncKey) return null;
   return { campaignId, syncKey };
+}
+
+export async function createPluginCampaign() {
+  const sql = db();
+  const id = crypto.randomUUID();
+  const syncKey = randomToken();
+  const state = structuredClone(initialState) as GameState;
+  await sql`
+    INSERT INTO campaigns (id, secret_hash, state)
+    VALUES (${id}::uuid, ${sha256(syncKey)}, ${JSON.stringify(state)}::jsonb)
+  `;
+  return {
+    id,
+    syncKey,
+    pairCode: id + "." + syncKey,
+    state,
+    version: 1,
+  };
 }
 
 export async function loadCampaignByToken(token: string) {
