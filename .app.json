@@ -1,0 +1,6 @@
+{
+  "name": "oraclerpg",
+  "version": "0.1.0",
+  "description": "Transforma o ChatGPT no Mestre de uma campanha persistente conectada ao OracleRPG.",
+  "skills": "./skills/"
+}
